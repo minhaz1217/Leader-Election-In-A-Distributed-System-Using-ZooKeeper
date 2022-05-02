@@ -10,9 +10,10 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
     public class ZooKeeperClientService
     {
         public ZooKeeper zooKeeper;
-
-        public ZooKeeperClientService()
+        private readonly IConfiguration _configuration;
+        public ZooKeeperClientService(IConfiguration configuration)
         {
+            _configuration = configuration;
         }
 
 
@@ -22,7 +23,7 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
         {
             try
             {
-                zooKeeper = new ZooKeeper("localhost:4001", 30000, watcher);
+                zooKeeper = new ZooKeeper(_configuration["zookeeper_connection_string"],  int.Parse(_configuration["zookeeper_connection_timeout"]) , watcher);
             }
             catch (Exception ex)
             {
