@@ -9,17 +9,17 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Controllers
     [Route("/api/[controller]")]
     public class LeaderElectionController : ControllerBase
     {
-        private readonly ZooKeeperClientService _zooKeeperClientService;
+        private readonly LeaderElectionService _leaderElectionService;
 
-        public LeaderElectionController(ZooKeeperClientService zooKeeperClientService)
+        public LeaderElectionController(LeaderElectionService leaderElectionService)
         {
-            _zooKeeperClientService = zooKeeperClientService;
+            _leaderElectionService = leaderElectionService;
         }
 
         [HttpGet("is-leader")]
         public async Task<IActionResult> IsLeaderAsync()
         {
-            var isLeader = await _zooKeeperClientService.IsLeaderAsync("my-unique-service");
+            var isLeader = await _leaderElectionService.IsLeaderAsync("my-unique-service");
             return Ok(string.Format("{0} - {1}", Dns.GetHostName(), isLeader));
         }
     }

@@ -1,4 +1,5 @@
 using Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services;
+using org.apache.zookeeper;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,7 @@ builder.Services.AddSwaggerGen();
 
 
 builder.Services.AddSingleton<ZooKeeperClientService, ZooKeeperClientService>();
+builder.Services.AddSingleton<LeaderElectionService, LeaderElectionService>();
 
 var app = builder.Build();
 
