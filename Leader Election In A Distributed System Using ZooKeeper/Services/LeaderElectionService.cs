@@ -6,7 +6,7 @@ using static org.apache.zookeeper.ZooDefs;
 
 namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
 {
-    public class LeaderElectionService : Watcher
+    public class LeaderElectionService : Watcher, IDisposable
     {
         private readonly string _leaderElectionPath;
         private readonly ZooKeeperClientService _zooKeeperClientService;
@@ -101,6 +101,11 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
                     }
                     break;
             }
+        }
+
+        public void Dispose()
+        {
+            _zooKeeperClientService.zooKeeper.closeAsync().Wait();
         }
     }
 
