@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  loadbalanced: # Here we use the name loadbalanced, because my nginx loadbalancer uses this name to loadbalance in.
+    build: .
+    networks:
+      - zookeeper-distributed-system
+
+  loadbalancer:
+    image: minhaz1217/loadbalancer-loadbalanced # It loadbalances to "loadbalanced:80" 
+    networks:
+      - zookeeper-distributed-system
+    ports:
+      - 5001:80
+
+  zookeeper:
+    image: "bitnami/zookeeper:latest"
+    networks:
+      - zookeeper-distributed-system
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      
+networks:
+  zookeeper-distributed-system:
+    name: zookeeper-distributed-system
+
+# Use this to run
+# docker-compose up -d --scale loadbalanced=5
+# To test 
+# curl http://localhost:5001/api/LeaderElection/is-leader
