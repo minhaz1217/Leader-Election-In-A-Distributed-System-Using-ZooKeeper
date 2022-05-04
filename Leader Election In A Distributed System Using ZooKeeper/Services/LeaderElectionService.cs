@@ -6,13 +6,13 @@ using static org.apache.zookeeper.ZooDefs;
 
 namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
 {
-    public class LeaderElectionService : Watcher, IDisposable
+    public class LeaderElectionService : Watcher
     {
         private readonly string _leaderElectionPath;
         private readonly ZooKeeperClientService _zooKeeperClientService;
         private readonly string _znodeId;
         private readonly IDictionary<string, bool> _isLeader;
-        private readonly ICollection<string> _nodeAdded;
+        private readonly ICollection<string> _serviceAdded;
         private bool _leaderCheckReady = false;
         public LeaderElectionService(ZooKeeperClientService zooKeeperClientService)
         {
@@ -22,7 +22,7 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
             _zooKeeperClientService.Connect(this);
             _znodeId = Guid.NewGuid().ToString();
             _isLeader = new Dictionary<string, bool>(); // in this we maintain our last know status
-            _nodeAdded = new Collection<string>(); // we use this to maintian the list of nodes that we've already added.
+            _serviceAdded = new Collection<string>(); // we use this to maintian the list of nodes that we've already added.
         }
 
         public async Task<bool> IsLeaderAsync(string service)
@@ -44,17 +44,9 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
                 }
 
                 var servicePath = $"{_leaderElectionPath}/{service}";
-                if (!_nodeAdded.Any(x => x == service))
-                {
-                    var tenantNode = await _zooKeeperClientService.zooKeeper.existsAsync(servicePath);
-                    if (tenantNode == null)
-                    {
-                        await _zooKeeperClientService.zooKeeper.createAsync(servicePath, Encoding.UTF8.GetBytes(servicePath), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-                    }
+                await AddServicePath(servicePath);
 
-                    await _zooKeeperClientService.zooKeeper.createAsync($"{servicePath}/n_", Encoding.UTF8.GetBytes(_znodeId), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
-                    _nodeAdded.Add(service);
-                }
+
                 var childNodes = (await _zooKeeperClientService.zooKeeper.getChildrenAsync(servicePath)).Children.OrderBy(x => x);
 
                 var leadChild = await _zooKeeperClientService.zooKeeper.getDataAsync($"{servicePath}/{childNodes.First()}", true);
@@ -67,6 +59,21 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
             catch (Exception ex)
             {
                 return false;
+            }
+        }
+
+        private async Task AddServicePath(string servicePath)
+        {
+            if (!_serviceAdded.Any(x => x == servicePath))
+            {
+                var serviceNode = await _zooKeeperClientService.zooKeeper.existsAsync(servicePath);
+                if (serviceNode == null)
+                {
+                    await _zooKeeperClientService.zooKeeper.createAsync(servicePath, Encoding.UTF8.GetBytes(servicePath), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+                }
+
+                await _zooKeeperClientService.zooKeeper.createAsync($"{servicePath}/n_", Encoding.UTF8.GetBytes(_znodeId), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+                _serviceAdded.Add(servicePath);
             }
         }
 
@@ -95,6 +102,7 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
                             await AddRootNode();
                             break;
                         case KeeperState.Disconnected:
+                            _leaderCheckReady = false;
                             _isLeader.Clear();
                             await _zooKeeperClientService.Connect(this);
                             break;
@@ -102,11 +110,5 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
                     break;
             }
         }
-
-        public void Dispose()
-        {
-            _zooKeeperClientService.zooKeeper.closeAsync().Wait();
-        }
     }
-
 }

@@ -7,23 +7,21 @@ using static org.apache.zookeeper.ZooDefs;
 
 namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
 {
-    public class ZooKeeperClientService
+    public class ZooKeeperClientService : IDisposable
     {
         public ZooKeeper zooKeeper;
         private readonly IConfiguration _configuration;
+
         public ZooKeeperClientService(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
-
-        #region Zookeeper connection
-
         public Task Connect(Watcher watcher)
         {
             try
             {
-                zooKeeper = new ZooKeeper(_configuration["zookeeper_connection_string"],  int.Parse(_configuration["zookeeper_connection_timeout"]) , watcher);
+                zooKeeper = new ZooKeeper(_configuration["zookeeper_connection_string"], int.Parse(_configuration["zookeeper_connection_timeout"]), watcher);
             }
             catch (Exception ex)
             {
@@ -31,14 +29,12 @@ namespace Leader_Election_In_A_Distributed_System_Using_ZooKeeper.Services
             return Task.CompletedTask;
         }
 
-        public async Task Disconnect()
+        public void Dispose()
         {
             if (zooKeeper != null)
             {
-                await zooKeeper.closeAsync();
+                zooKeeper.closeAsync().Wait();
             }
         }
-        #endregion Zookeeper connection
-
     }
 }
